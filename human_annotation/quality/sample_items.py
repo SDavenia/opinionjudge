@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from utils.data_utils import opinions_path
+from utils.data_utils import opinions_path, with_valueprism_fields
 
 HERE = Path(__file__).resolve().parent
 STANCES = ["Supports", "Opposes", "Either"]
@@ -49,7 +49,7 @@ def stratified_sample(gens, n_items, rng):
 
 def main():
     args = parse_args()
-    gens = pd.read_csv(args.generations_csv)
+    gens = with_valueprism_fields(pd.read_csv(args.generations_csv), required=True)
     gens["text"] = gens["text"].astype(str).str.strip()
     sample = stratified_sample(gens, args.n_items, np.random.default_rng(args.seed))
     sample["sample_id"] = [f"Q{i + 1:03d}" for i in range(len(sample))]

@@ -15,6 +15,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from utils.data_utils import with_valueprism_fields
+
 HERE = Path(__file__).resolve().parent
 STANCES = ["Supports", "Opposes", "Either"]
 ANNOTATOR_COLUMNS = ["annotator_id", "position", "item_id", "situation", "target_stance", "value_type", "value",
@@ -49,7 +51,7 @@ def stance_balanced_order(items, rng):
 
 def main():
     args = parse_args()
-    items = pd.read_csv(args.items_csv).set_index("sample_id", drop=False)
+    items = with_valueprism_fields(pd.read_csv(args.items_csv), required=True).set_index("sample_id", drop=False)
     annotators = args.annotators or [f"ANN{k + 1}" for k in range(args.n_annotators)]
     n, k_shared, n_ann = args.n_per_annotator, args.n_overlap, len(annotators)
     if not 0 <= k_shared <= n:

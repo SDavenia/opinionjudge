@@ -9,6 +9,7 @@ DATASETS = ["valueprism", "habermas", "habermas_hybrid"]
 SITUATION_DATASETS = ["valueprism", "habermas"]
 
 DEFAULT_GENERATOR = "llama-3.3-70b"
+VALUEPRISM_SOURCE_FIELDS = ["vp_vrd", "vp_vrd_value", "vp_explanation"]
 DEFAULT_GENERATION_PROMPT = {"valueprism": "reflective_person", "habermas_hybrid": "hb_reflective_person"}
 
 
@@ -29,6 +30,23 @@ def opinions_path(dataset_id, generation_model_id=DEFAULT_GENERATOR, generation_
         return situations_path("habermas", data_dir)
     tag = generator_tag(dataset_id, generation_model_id, generation_prompt_version)
     return Path(generations_dir) / dataset_id / f"{tag}.csv"
+
+
+def with_valueprism_fields(df, data_dir=DATA_DIR, required=False):
+    """df with the ValuePrism value fields and explanation it lacks, by text_id. The released
+    data does not include them (the ValuePrism license does not allow redistributing them as-is);
+    prepare_data.py downloads them again into the ValuePrism sample."""
+    missing = [c for c in VALUEPRISM_SOURCE_FIELDS if c not in df.columns]
+    path = situations_path("valueprism", data_dir)
+    if missing and path.exists():
+        sample = pd.read_csv(path)
+        available = [c for c in missing if c in sample.columns]
+        df = df.merge(sample[["text_id"] + available], on="text_id", how="left")
+    if required:
+        absent = [c for c in VALUEPRISM_SOURCE_FIELDS if c not in df.columns or df[c].isna().any()]
+        if absent:
+            raise ValueError(f"Missing ValuePrism fields {absent}: run prepare_data.py to download them into {path}.")
+    return df
 
 
 def load_situations(dataset_id, data_dir=DATA_DIR, limit=None):

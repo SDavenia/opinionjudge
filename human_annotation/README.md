@@ -7,8 +7,13 @@ browser. `assignments/key.csv` maps the opaque item ids back to the pairs and is
 the annotators. Sampling and assignment are seeded, so re-running them gives the same files.
 
 The data of both studies (`samples/`, `assignments/` and `ratings/` in each study folder) is
-not in the repository but on the Hugging Face Hub; download it into this folder (see the main
-README). Run the scripts from the repository root. Results go to `results/human_annotation/`.
+not in the repository: it will be released on the Hugging Face Hub after publication, to be
+downloaded into this folder (see the main README). Run the scripts from the repository root. Results go to `results/human_annotation/`.
+
+The released quality-check files do not include the ValuePrism explanations and values (the
+ValuePrism license does not allow redistributing them as-is). The quality scripts take them from
+`artifacts/data/valueprism_sample.csv` as made by `prepare_data.py`: `sample_items` and
+`assign_annotators` need them, `compute_quality` only for the breakdown by value type.
 
 ## Symmetry study (`symmetric/`)
 

@@ -8,6 +8,11 @@ interval over opinions. Differences between groups are tested by permuting the l
 square statistic). With items shared between annotators, agreement.csv has percent agreement,
 Fleiss' kappa, Krippendorff's alpha, Gwet's AC1 and pairwise Cohen's kappa.
 
+The value type and the ValuePrism value and explanation of each opinion are not in the released
+data: they are taken from the ValuePrism sample made by prepare_data.py. Without it, the value-
+type breakdown is skipped and no_items.csv has no value and explanation; the other results are
+unchanged.
+
 Usage:
     python -m human_annotation.quality.compute_quality
     python -m human_annotation.quality.compute_quality --exclude ANN2
@@ -20,6 +25,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
+from utils.data_utils import with_valueprism_fields
 from utils.paths import RESULTS_DIR
 
 HERE = Path(__file__).resolve().parent
@@ -49,7 +55,7 @@ def load_ratings(annotation_dir, items, exclude):
         print(f"[warn] {dup.sum()} duplicated (annotator, item) ratings: keeping the final file's answer.")
         ratings = ratings[~dup]
 
-    key = pd.read_csv(annotation_dir / "assignments" / "key.csv")
+    key = pd.read_csv(annotation_dir / "assignments" / "key.csv").drop(columns="vp_vrd", errors="ignore")
     unknown = ratings.merge(key, on=["annotator_id", "item_id"], how="left", indicator=True)
     if (unknown["_merge"] == "left_only").any():
         raise ValueError("Some returned item_ids are not in key.csv.")
@@ -67,8 +73,9 @@ def load_ratings(annotation_dir, items, exclude):
     long = long[~missing].copy()
     long["yes"] = (long["label"] == "yes").astype(int)
     long["revised"] = long["label"] != long["first_label"].str.strip().str.lower()
-    return long.merge(items[["sample_id", "situation", "vp_vrd_value", "vp_explanation", "text"]], on="sample_id",
-                      how="left")
+    item_columns = [c for c in ["sample_id", "situation", "vp_vrd", "vp_vrd_value", "vp_explanation", "text"]
+                    if c in items.columns]
+    return long.merge(items[item_columns], on="sample_id", how="left")
 
 
 def wilson(successes, n, level=0.95):
@@ -142,20 +149,23 @@ def agreement_stats(long):
 
 def main():
     args = parse_args()
-    items = pd.read_csv(args.annotation_dir / "samples" / "items.csv")
+    items = with_valueprism_fields(pd.read_csv(args.annotation_dir / "samples" / "items.csv"))
+    has_type = "vp_vrd" in items.columns and items["vp_vrd"].notna().all()
+    if not has_type:
+        print("[warn] No ValuePrism value types (run prepare_data.py): skipping the value-type breakdown.")
     long = load_ratings(args.annotation_dir, items, args.exclude)
     out_dir = args.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     long.to_csv(out_dir / "ratings_long.csv", index=False)
 
-    per_item = (long.groupby(["sample_id", "stance", "vp_vrd"])
+    per_item = (long.groupby(["sample_id", "stance"] + (["vp_vrd"] if has_type else []))
                 .agg(n_ratings=("yes", "size"), n_yes=("yes", "sum"), yes_share=("yes", "mean"),
                      annotators=("annotator_id", lambda s: " ".join(sorted(s))))
                 .reset_index())
     per_item.to_csv(out_dir / "per_item.csv", index=False)
 
     rows = [{"scope": "all", "group": "all", **rate_row(per_item)}]
-    for col, scope in (("stance", "stance"), ("vp_vrd", "value_type")):
+    for col, scope in [("stance", "stance")] + ([("vp_vrd", "value_type")] if has_type else []):
         order = STANCES if col == "stance" else sorted(per_item[col].unique())
         rows += [{"scope": scope, "group": g, **rate_row(per_item[per_item[col] == g])} for g in order
                  if (per_item[col] == g).any()]
@@ -164,7 +174,8 @@ def main():
     summary = pd.DataFrame(rows)
     p_values = {scope: permutation_p(long[col], long["yes"], args.n_perm, args.seed + k)
                 for k, (scope, col) in enumerate([("stance", "stance"), ("value_type", "vp_vrd"),
-                                                  ("annotator", "annotator_id")])}
+                                                  ("annotator", "annotator_id")])
+                if has_type or col != "vp_vrd"}
     summary["perm_p_between_groups"] = summary["scope"].map(p_values)
     summary.to_csv(out_dir / "summary.csv", index=False)
 
@@ -183,9 +194,10 @@ def main():
     if not agreement.empty:
         agreement.to_csv(out_dir / "agreement.csv", index=False)
     no_ids = per_item.loc[per_item["n_yes"] < per_item["n_ratings"], "sample_id"]
-    (long[long["sample_id"].isin(no_ids)].sort_values(["sample_id", "annotator_id"])
-     [["sample_id", "text_id", "annotator_id", "label", "comment", "stance", "vp_vrd", "situation", "vp_vrd_value",
-       "vp_explanation", "text"]].to_csv(out_dir / "no_items.csv", index=False))
+    no_columns = [c for c in ["sample_id", "text_id", "annotator_id", "label", "comment", "stance", "vp_vrd",
+                              "situation", "vp_vrd_value", "vp_explanation", "text"] if c in long.columns]
+    (long[long["sample_id"].isin(no_ids)].sort_values(["sample_id", "annotator_id"])[no_columns]
+     .to_csv(out_dir / "no_items.csv", index=False))
 
     pd.set_option("display.width", 220)
     fmt = lambda df: df.to_string(index=False, float_format=lambda v: f"{v:.3f}")  # noqa: E731

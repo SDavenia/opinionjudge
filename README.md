@@ -41,7 +41,7 @@ The sampled datasets, the generated opinions, the judges' scores and the extract
 are released on the Hugging Face Hub. They go in `artifacts/`, where every script reads them:
 
 ```bash
-hf download <TODO: ADD dataset-repo> --repo-type dataset --local-dir artifacts
+hf download SDavenia/opinionjudge-artifacts --repo-type dataset --local-dir artifacts
 ```
 
 ```
@@ -53,14 +53,17 @@ artifacts/
 ```
 
 With the artefacts in place, the analyses can be run directly; the steps before them re-create the artefacts.
+The released files do not include the ValuePrism explanations and values or the Habermas participant ids;
+`prepare_data.py` downloads them again, which is needed only to re-generate the ValuePrism opinions.
 
 The data of the human annotation studies (the symmetry study of the alignment scores and the
-quality check of the generated opinions) is also released on the Hugging Face Hub: the sampled
-items, the assignments and the annotators' ratings. The code is in `human_annotation/`, whose
-README describes the studies; the data goes in the same folder, next to the scripts:
+quality check of the generated opinions), that is the sampled items, the assignments and the
+annotators' ratings, will be released on the Hugging Face Hub after publication. The code is in
+`human_annotation/`, whose README describes the studies; the data goes in the same folder, next
+to the scripts:
 
 ```bash
-hf download <TODO: ADD human-annotation-repo> --repo-type dataset --local-dir human_annotation
+hf download SDavenia/opinionjudge-human_annotation --repo-type dataset --local-dir human_annotation --include "symmetric/*" "quality/*"
 python -m human_annotation.symmetric.compute_stability
 python plot_score_distribution.py --run_human   # score distributions, humans vs judges
 ```
@@ -143,6 +146,13 @@ figures/
 ├── big_flips/{main,scale}/
 ├── score_distribution/   alignment_examples/ 
 ```
+
+## Acknowledgments
+
+We thank the four in-house annotators, NLP researchers and PhD students, who took part in the human annotation studies: <TODO: Annotator 1>, <TODO: Annotator 2>, <TODO: Annotator 3> and <TODO: Annotator 4>.
+
+We acknowledge ISCRA for awarding this project access to the LEONARDO supercomputer, owned by the EuroHPC Joint Undertaking, hosted by CINECA (Italy).
+This project has received funding from the European Union’s Horizon Europe research and innovation programme under the Marie Skłodowska-Curie grant agreement No 101282681 – GenEval.
 
 ## Licenses
 
