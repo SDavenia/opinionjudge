@@ -155,7 +155,7 @@ figures/
 
 ## Acknowledgments
 
-We thank the four in-house annotators, NLP researchers and PhD students, who took part in the human annotation studies: <TODO: Annotator 1>, <TODO: Annotator 2>, <TODO: Annotator 3> and <TODO: Annotator 4>.
+We thank the four in-house annotators, NLP researchers and PhD students, who took part in the human annotation studies.
 
 We acknowledge ISCRA for awarding this project access to the LEONARDO supercomputer, owned by the EuroHPC Joint Undertaking, hosted by CINECA (Italy).
 This project has received funding from the European Union’s Horizon Europe research and innovation programme under the Marie Skłodowska-Curie grant agreement No 101282681 – GenEval.
