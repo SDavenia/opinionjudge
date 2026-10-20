@@ -37,8 +37,15 @@ cp .env.example .env             # OpenRouter key, only for score_openrouter.py
 
 ## Data
 
-The sampled datasets, the generated opinions, the judges' scores and the extracted features
-are released on the Hugging Face Hub. They go in `artifacts/`, where every script reads them:
+All the data will be released on the Hugging Face Hub after publication, in three datasets:
+
+| Dataset | Content |
+|---|---|
+| `SDavenia/opinionjudge-artifacts` | the sampled datasets, the generated opinions, the judges' scores and the extracted features |
+| `SDavenia/opinionjudge-synthetic` | the synthetic opinions alone, with a dataset card per source (ValuePrism, Habermas Machine) |
+| `SDavenia/opinionjudge-human_annotation` | the data of the human annotation studies |
+
+The artefacts go in `artifacts/`, where every script reads them:
 
 ```bash
 hf download SDavenia/opinionjudge-artifacts --repo-type dataset --local-dir artifacts
@@ -57,10 +64,9 @@ The released files do not include the ValuePrism explanations and values or the 
 `prepare_data.py` downloads them again, which is needed only to re-generate the ValuePrism opinions.
 
 The data of the human annotation studies (the symmetry study of the alignment scores and the
-quality check of the generated opinions), that is the sampled items, the assignments and the
-annotators' ratings, will be released on the Hugging Face Hub after publication. The code is in
-`human_annotation/`, whose README describes the studies; the data goes in the same folder, next
-to the scripts:
+quality check of the generated opinions) are the sampled items, the assignments and the
+annotators' ratings. The code is in `human_annotation/`, whose README describes the studies; the
+data goes in the same folder, next to the scripts:
 
 ```bash
 hf download SDavenia/opinionjudge-human_annotation --repo-type dataset --local-dir human_annotation --include "symmetric/*" "quality/*"
