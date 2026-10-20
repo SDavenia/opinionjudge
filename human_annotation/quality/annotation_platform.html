@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opinion Quality Check</title>
+<style>
+  :root{
+    --paper:#EEF0E6;
+    --paper-deep:#E2E5D6;
+    --ink:#1C1E16;
+    --ink-soft:#63665A;
+    --line:#CBCEBC;
+    --teal:#2F5D57;
+    --teal-dark:#1E3E3A;
+    --teal-soft:#DCE8E4;
+    --amber:#C98A2C;
+    --amber-soft:#F3E1BB;
+    --red:#9E3B31;
+    --red-soft:#F6DEDC;
+    --white:#FFFFFF;
+    --radius:12px;
+    --shadow:0 1px 2px rgba(28,30,22,.08),0 6px 16px rgba(28,30,22,.07);
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+  .topbar{padding:14px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;background:var(--paper);position:sticky;top:0;z-index:5;flex-wrap:wrap;}
+  .topbar h1{font-family:var(--serif);font-size:19px;margin:0;letter-spacing:.2px;}
+  .topbar .tag{font-family:var(--mono);font-size:10.5px;color:var(--teal-dark);background:var(--teal-soft);padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .topbar .spacer{flex:1;}
+  .progress-wrap{max-width:900px;margin:0 auto;padding:10px 20px 0;}
+  .progress-track{height:6px;background:var(--paper-deep);border-radius:6px;overflow:hidden;margin:6px 0 2px;}
+  .progress-fill{height:100%;background:var(--teal);transition:width .2s;}
+  .progress-label{font-family:var(--mono);font-size:11px;color:var(--ink-soft);display:flex;justify-content:space-between;}
+  .stage{max-width:900px;margin:0 auto;padding:20px 20px 90px;}
+  .narrow{max-width:760px;margin:0 auto;}
+
+  .dropzone{border:2px dashed var(--line);border-radius:var(--radius);padding:48px 24px;text-align:center;background:var(--white);cursor:pointer;transition:.15s;}
+  .dropzone.drag{border-color:var(--teal);background:var(--teal-soft);}
+  .dropzone h2{font-family:var(--serif);font-size:22px;margin:0 0 8px;}
+  .dropzone p{color:var(--ink-soft);font-size:14px;margin:4px 0;}
+  .error-msg{background:var(--red-soft);border:1px solid #D99C97;color:#7A2C24;border-radius:8px;padding:12px 14px;font-size:13px;margin-top:14px;}
+  .note{background:var(--amber-soft);border:1px solid #E2C27F;border-radius:8px;padding:12px 14px;font-size:13.5px;line-height:1.5;margin-top:14px;}
+
+  .btn{font-family:var(--sans);font-size:14px;font-weight:600;border:1px solid var(--line);background:var(--white);color:var(--ink);padding:10px 18px;border-radius:8px;cursor:pointer;}
+  .btn:hover{border-color:var(--teal);}
+  .btn-primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .btn-primary:hover{background:var(--teal-dark);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-small{font-size:12px;padding:6px 12px;}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:14px;}
+  h2.section-title{font-family:var(--serif);font-size:22px;margin:0 0 10px;}
+  .card p,.card li{font-size:14.5px;line-height:1.6;}
+  .card ul{padding-left:20px;}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+  .situation-card{background:var(--teal-dark);color:#fff;border:none;}
+  .situation-card .eyebrow{color:#BFE0D8;}
+  .situation-card p{font-size:16px;line-height:1.55;margin:0;}
+
+  .spec-card{border-top:4px solid var(--teal);}
+  .spec-card .eyebrow{color:var(--teal-dark);}
+  .spec{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;align-items:baseline;margin:0;}
+  .spec dt{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
+  .spec dd{margin:0;font-size:15px;line-height:1.55;}
+  .stance-pill{display:inline-block;font-weight:700;padding:2px 10px;border-radius:20px;background:var(--teal-soft);color:var(--teal-dark);margin-right:6px;}
+  .stance-gloss{color:var(--ink-soft);font-size:13.5px;}
+  .vtype{font-family:var(--mono);font-size:11px;color:var(--ink-soft);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-right:6px;}
+
+  .opinion-card{border-top:4px solid var(--amber);}
+  .opinion-card .eyebrow{color:#9A6512;}
+  .opinion-card .otext{font-size:16px;line-height:1.7;white-space:pre-wrap;}
+
+  .question{font-family:var(--serif);font-size:19px;margin:0 0 6px;}
+  .question-sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 16px;}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .choice{font-family:var(--sans);font-size:17px;font-weight:700;padding:16px 12px;border-radius:10px;border:2px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .choice .key{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--ink-soft);border:1px solid var(--line);border-radius:4px;padding:1px 6px;}
+  .choice.yes:hover{border-color:var(--teal);}
+  .choice.no:hover{border-color:var(--red);}
+  .choice.yes.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .choice.no.on{background:var(--red);border-color:var(--red);color:#fff;}
+  .choice.on .key{color:#fff;border-color:rgba(255,255,255,.5);}
+  .choice:focus-visible{outline:2px solid var(--teal);outline-offset:3px;}
+
+  details.guide{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;}
+  details.guide summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--teal-dark);}
+  table.guide-table{border-collapse:collapse;width:100%;margin-top:10px;font-size:13.5px;line-height:1.5;}
+  table.guide-table td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  table.guide-table td:first-child{font-weight:700;white-space:nowrap;width:1%;}
+
+  textarea{width:100%;font-family:var(--sans);font-size:13.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);resize:vertical;min-height:38px;}
+  .field-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:16px 0 6px;display:block;}
+
+  .row-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px;flex-wrap:wrap;}
+  .kbd-hint{font-family:var(--mono);font-size:11px;color:var(--ink-soft);}
+
+  .hero-result{background:var(--teal-dark);color:#fff;border-radius:var(--radius);padding:40px 26px;text-align:center;}
+  .hero-result .eyebrow{font-size:12px;letter-spacing:.1em;color:#BFE0D8;}
+  .hero-result h2{font-family:var(--serif);font-size:30px;margin:10px 0 6px;}
+  .hero-result p{color:#DCEAE6;font-size:14.5px;line-height:1.6;}
+  .hero-result .btn{margin-top:14px;}
+
+  @media (max-width:820px){
+    .topbar{padding:12px 16px;}
+    .stage,.progress-wrap{padding-left:16px;padding-right:16px;}
+    .card{padding:16px;}
+    .spec{grid-template-columns:1fr;gap:2px;}
+    .spec dd{margin-bottom:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Opinion Quality Check</h1>
+  <span class="tag" id="who-tag">load your file to begin</span>
+  <span class="spacer"></span>
+  <button class="btn btn-small" id="save-btn" style="display:none">Download progress</button>
+</div>
+<div id="progress-slot"></div>
+<div id="stage" class="stage"></div>
+
+<script>
+const REQUIRED_COLS = ['annotator_id','position','item_id','situation','target_stance','value','explanation','opinion'];
+const STORAGE_PREFIX = 'quality-annotation:v1:';
+// Same wording as the instruction given to the generator.
+const STANCE_GLOSS = {
+  'Supports': 'firmly advocates for or justifies the action',
+  'Opposes': 'firmly criticises or argues against the action',
+  'Either': 'highlights the ambiguity, conditionality or internal tension of the action'
+};
+const GUIDE = [
+  ['Stance', 'The opinion takes the target stance. <b>Supports</b>: it clearly comes down in favour of the action (it may mention a downside). <b>Opposes</b>: it clearly comes down against it. <b>Either</b>: it conveys genuine ambiguity, conditionality or tension, without firmly settling on one side. Not kept if the opinion lands on a different side, or is firmly one-sided when the target is Either.'],
+  ['Value', 'The reasoning is recognisably driven by the given value (right, duty or value). It does not have to name it. Not kept if the argument rests on a different principle and the given value is absent or only in passing.'],
+  ['Explanation', 'The core idea of the explanation is present, possibly paraphrased or implicit. Not kept if it is missing or contradicted.']
+];
+
+const APP = {
+  items: [],
+  answers: {},
+  current: 0,
+  fileName: '',
+  storageKey: null,
+  shownAt: null
+};
+const stage = document.getElementById('stage');
+const progressSlot = document.getElementById('progress-slot');
+const saveBtn = document.getElementById('save-btn');
+saveBtn.addEventListener('click', downloadCsv);
+
+function escapeHtml(str){
+  return String(str==null?'':str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function storageGet(key){ try{ return window.localStorage.getItem(key); }catch(e){ return null; } }
+function storageSet(key,val){ try{ window.localStorage.setItem(key,val); return true; }catch(e){ return false; } }
+function storageDel(key){ try{ window.localStorage.removeItem(key); }catch(e){} }
+
+function persist(){
+  if(!APP.storageKey) return;
+  storageSet(APP.storageKey, JSON.stringify({answers:APP.answers, current:APP.current, savedAt:new Date().toISOString()}));
+}
+
+function parseCsv(text){
+  if(text.charCodeAt(0)===0xFEFF) text = text.slice(1);
+  const rows=[]; let row=[], field='', inQuotes=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQuotes=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){row.push(field);field='';}
+      else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';}
+      else if(c!=='\r') field+=c;
+    }
+  }
+  if(field.length || row.length){row.push(field);rows.push(row);}
+  return rows.filter(r => r.some(v=>v!==''));
+}
+
+function csvField(v){
+  const s = v==null ? '' : String(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+
+function renderUpload(error){
+  progressSlot.innerHTML='';
+  saveBtn.style.display='none';
+  APP.keyHandler = null;
+  stage.innerHTML = `
+    <div class="narrow">
+      <div class="dropzone" id="dz">
+        <h2>Load your annotation file</h2>
+        <p>Drag &amp; drop the <b>.csv</b> file you received here, or click to choose it.</p>
+        <p style="font-size:12.5px">Nothing is uploaded anywhere: the file stays on your computer.</p>
+        <input type="file" id="file-input" accept=".csv,text/csv" style="display:none">
+      </div>
+      ${error ? `<div class="error-msg">${escapeHtml(error)}</div>` : ''}
+    </div>`;
+  const dz = document.getElementById('dz');
+  const input = document.getElementById('file-input');
+  dz.addEventListener('click', () => input.click());
+  input.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+async function handleFile(file){
+  let rows;
+  try{ rows = parseCsv(await file.text()); }
+  catch(e){ renderUpload('Could not read that file: ' + e.message); return; }
+  if(rows.length < 2){ renderUpload('That file has no items in it.'); return; }
+
+  const headers = rows[0].map(h => h.trim());
+  const missing = REQUIRED_COLS.filter(c => !headers.includes(c));
+  if(missing.length){
+    renderUpload(`This does not look like an annotation file (missing column${missing.length>1?'s':''}: ${missing.join(', ')}). ` +
+                 `If you were sent a ratings file by mistake, ask for your annotation file.`);
+    return;
+  }
+  const items = rows.slice(1).map(r => {
+    const o = {}; headers.forEach((h,i) => { o[h] = r[i]==null ? '' : r[i]; }); return o;
+  }).sort((a,b) => Number(a.position) - Number(b.position));
+
+  const ids = new Set(items.map(it => it.item_id));
+  if(ids.size !== items.length){ renderUpload('The file contains duplicated item ids; please ask for a fresh copy.'); return; }
+  const annotators = new Set(items.map(it => it.annotator_id));
+  if(annotators.size !== 1){ renderUpload('The file mixes several annotator ids; please ask for your own file.'); return; }
+
+  APP.items = items;
+  APP.fileName = file.name;
+  APP.answers = {};
+  APP.current = 0;
+  // Keyed by annotator and item list, so a different assignment never resumes this progress.
+  const fp = items.map(it => it.item_id).join('|');
+  let h = 0; for(let i=0;i<fp.length;i++){ h = (h*31 + fp.charCodeAt(i)) | 0; }
+  APP.storageKey = `${STORAGE_PREFIX}${items[0].annotator_id}:${(h>>>0).toString(16)}`;
+  document.getElementById('who-tag').textContent = `${items[0].annotator_id} · ${items.length} items`;
+
+  let saved = null;
+  try{ saved = JSON.parse(storageGet(APP.storageKey) || 'null'); }catch(e){ saved = null; }
+  const nDone = saved ? Object.keys(saved.answers||{}).filter(k => ids.has(k)).length : 0;
+  renderIntro(nDone > 0 ? saved : null, nDone);
+}
+
+function guideTable(){
+  return `<table class="guide-table">${GUIDE.map(([n,d]) => `<tr><td>${n}</td><td>${d}</td></tr>`).join('')}</table>`;
+}
+
+function renderIntro(saved, nDone){
+  progressSlot.innerHTML='';
+  APP.keyHandler = null;
+  const n = APP.items.length;
+  stage.innerHTML = `
+    <div class="narrow">
+      <div class="card">
+        <h2 class="section-title">Instructions</h2>
+        <p>Each screen shows a <b>situation</b> and a short <b>opinion</b> about it. The opinion was written to a
+           specification with three parts:</p>
+        <ul>
+          <li>a <b>target stance</b> towards the action in the situation: <i>Supports</i>, <i>Opposes</i> or <i>Either</i>;</li>
+          <li>a <b>value</b> (a right, duty or value) the opinion should be based on;</li>
+          <li>an <b>explanation</b> of how that value applies to the situation.</li>
+        </ul>
+        <p>Your task is to answer one question: <b>does the opinion keep all three?</b></p>
+        <ul>
+          <li>Answer <b>Yes</b> only if the stance, the value and the explanation are all kept.</li>
+          <li>Answer <b>No</b> if any one of them is missing, changed or contradicted. If you like, note which one in the comment box.</li>
+          <li>The opinion does not have to name the value or copy the explanation: paraphrased or implicit is fine.</li>
+          <li>Extra reasons are fine as long as they do not change the stance or push the given value aside.</li>
+          <li>Do <b>not</b> judge writing quality, length, style, or whether you personally agree with the opinion.</li>
+        </ul>
+        <p>What counts as kept (this guide is also available on every screen):</p>
+        ${guideTable()}
+      </div>
+      <div class="card">
+        <h2 class="section-title">Practicalities</h2>
+        <ul>
+          <li>There are <b>${n} items</b>. Plan roughly ${Math.round(n*30/60)}–${Math.round(n*45/60)} minutes; short breaks are fine.</li>
+          <li>Keyboard: <b>Y</b> = Yes, <b>N</b> = No, <b>Enter</b> = next item.</li>
+          <li>Your progress is saved automatically in this browser. If you close the page, open it again in the <b>same browser</b> and load the same file to continue. Private/incognito windows do not keep progress.</li>
+          <li>You can go back to fix an answer you just gave, but please do not go back to compare items.</li>
+          <li>When you are done, click <b>Download ratings</b> and send us the downloaded file. You can also download your progress at any time with the button at the top right.</li>
+        </ul>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="back-upload">Choose a different file</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${saved ? `<button class="btn" id="restart">Start over</button>
+                     <button class="btn btn-primary" id="resume">Resume (${nDone}/${n} done)</button>`
+                  : `<button class="btn btn-primary" id="start">Start</button>`}
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('back-upload').onclick = () => renderUpload();
+  if(saved){
+    document.getElementById('resume').onclick = () => {
+      APP.answers = saved.answers || {};
+      const firstOpen = APP.items.findIndex(it => !APP.answers[it.item_id]);
+      APP.current = firstOpen === -1 ? APP.items.length - 1 : firstOpen;
+      begin();
+    };
+    document.getElementById('restart').onclick = () => {
+      if(!confirm('Discard the saved answers in this browser and start from the first item?')) return;
+      storageDel(APP.storageKey); APP.answers = {}; APP.current = 0; begin();
+    };
+  } else {
+    document.getElementById('start').onclick = () => begin();
+  }
+}
+
+function begin(){
+  saveBtn.style.display='';
+  if(APP.items.every(it => APP.answers[it.item_id])) renderDone(); else renderItem();
+}
+
+function renderProgress(){
+  const n = APP.items.length;
+  const done = APP.items.filter(it => APP.answers[it.item_id]).length;
+  progressSlot.innerHTML = `
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Item ${APP.current+1} of ${n}</span><span>${done} answered</span></div>
+      <div class="progress-track"><div class="progress-fill" style="width:${100*done/n}%"></div></div>
+    </div>`;
+}
+
+function renderItem(){
+  const it = APP.items[APP.current];
+  const prev = APP.answers[it.item_id];
+  renderProgress();
+  const stance = it.target_stance.trim();
+  stage.innerHTML = `
+    <div class="card situation-card">
+      <div class="eyebrow">Situation</div>
+      <p>${escapeHtml(it.situation)}</p>
+    </div>
+    <div class="card spec-card">
+      <div class="eyebrow">What the opinion was asked to express</div>
+      <dl class="spec">
+        <dt>Stance</dt>
+        <dd><span class="stance-pill">${escapeHtml(stance)}</span><span class="stance-gloss">${escapeHtml(STANCE_GLOSS[stance] || '')}</span></dd>
+        <dt>Value</dt>
+        <dd>${it.value_type ? `<span class="vtype">${escapeHtml(it.value_type)}</span>` : ''}${escapeHtml(it.value)}</dd>
+        <dt>Explanation</dt>
+        <dd>${escapeHtml(it.explanation)}</dd>
+      </dl>
+    </div>
+    <div class="card opinion-card">
+      <div class="eyebrow">Opinion</div>
+      <div class="otext">${escapeHtml(it.opinion.trim())}</div>
+    </div>
+    <div class="card">
+      <p class="question">Does the opinion keep the stance, the value <i>and</i> the explanation?</p>
+      <p class="question-sub">Yes only if all three are kept.</p>
+      <div class="choices">
+        <button type="button" class="choice yes" data-v="yes">Yes <span class="key">Y</span></button>
+        <button type="button" class="choice no" data-v="no">No <span class="key">N</span></button>
+      </div>
+      <details class="guide"><summary>What counts as kept</summary>${guideTable()}</details>
+      <label class="field-label" for="comment">Comment (optional: e.g. which part is not kept, or an unclear item)</label>
+      <textarea id="comment" rows="1">${escapeHtml(prev ? prev.comment : '')}</textarea>
+      <div class="row-actions">
+        <button class="btn" id="prev" ${APP.current===0 ? 'disabled' : ''}>&larr; Back</button>
+        <span class="kbd-hint">Y / N = answer · Enter = next</span>
+        <button class="btn btn-primary" id="next" ${prev ? '' : 'disabled'}>${APP.current === APP.items.length-1 ? 'Finish' : 'Next &rarr;'}</button>
+      </div>
+    </div>`;
+
+  const nextBtn = document.getElementById('next');
+  let label = prev ? prev.label : null;
+
+  function setLabel(v){
+    label = v;
+    document.querySelectorAll('.choice').forEach(b => {
+      const on = b.dataset.v === v;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    nextBtn.disabled = false;
+  }
+  if(prev) setLabel(prev.label);
+  document.querySelectorAll('.choice').forEach(b => b.addEventListener('click', () => setLabel(b.dataset.v)));
+
+  document.getElementById('prev').onclick = () => { commit(false); APP.current--; renderItem(); window.scrollTo(0,0); };
+  nextBtn.onclick = () => advance();
+  APP.shownAt = performance.now();
+  APP.keyHandler = e => {
+    if(e.target.tagName === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if(k === 'y' || k === 'n'){ e.preventDefault(); setLabel(k === 'y' ? 'yes' : 'no'); }
+    else if(e.key === 'Enter' && e.target.tagName !== 'BUTTON' && label){ e.preventDefault(); advance(); }
+  };
+
+  function commit(requireLabel){
+    const elapsed = performance.now() - APP.shownAt;
+    const old = APP.answers[it.item_id];
+    if(!label){
+      persist();
+      return !requireLabel;
+    }
+    APP.answers[it.item_id] = {
+      label,
+      first_label: old ? old.first_label : label,
+      rt_ms: (old ? old.rt_ms : 0) + elapsed,
+      n_visits: (old ? old.n_visits : 0) + 1,
+      comment: document.getElementById('comment').value.trim(),
+      rated_at: new Date().toISOString()
+    };
+    persist();
+    return true;
+  }
+  function advance(){
+    if(!commit(true)) return;
+    if(APP.current < APP.items.length - 1){ APP.current++; renderItem(); window.scrollTo(0,0); }
+    else if(APP.items.every(x => APP.answers[x.item_id])) renderDone();
+    else { APP.current = APP.items.findIndex(x => !APP.answers[x.item_id]); renderItem(); }
+  }
+}
+document.addEventListener('keydown', e => { if(APP.keyHandler) APP.keyHandler(e); });
+
+function renderDone(){
+  APP.keyHandler = null;
+  renderProgress();
+  progressSlot.querySelector('.progress-label span').textContent = 'All items answered';
+  stage.innerHTML = `
+    <div class="narrow">
+      <div class="hero-result">
+        <div class="eyebrow">Complete</div>
+        <h2>Thank you!</h2>
+        <p>You answered all ${APP.items.length} items. Please download your ratings and send the file back to us.</p>
+        <button class="btn btn-primary" id="dl" style="background:var(--amber);border-color:var(--amber)">Download ratings</button>
+        <p style="font-size:12.5px;margin-top:14px">File name: <code>${escapeHtml(outputName(true))}</code></p>
+      </div>
+      <div class="row-actions">
+        <button class="btn" id="review">&larr; Back to the last item</button>
+      </div>
+      <div class="note">Your answers stay saved in this browser, so you can download them again later by loading the same file.</div>
+    </div>`;
+  document.getElementById('dl').onclick = downloadCsv;
+  document.getElementById('review').onclick = () => { APP.current = APP.items.length - 1; renderItem(); };
+}
+
+function outputName(complete){
+  const it = APP.items[0];
+  return `ratings_${it.annotator_id}${complete ? '' : '_partial'}.csv`;
+}
+
+function downloadCsv(){
+  const cols = ['annotator_id','position','item_id','label','first_label','rt_seconds','n_visits','comment','rated_at','source_file'];
+  const lines = [cols.join(',')];
+  APP.items.forEach(it => {
+    const a = APP.answers[it.item_id];
+    lines.push([
+      it.annotator_id, it.position, it.item_id,
+      a ? a.label : '', a ? a.first_label : '',
+      a ? (a.rt_ms/1000).toFixed(1) : '', a ? a.n_visits : '',
+      a ? a.comment : '', a ? a.rated_at : '', APP.fileName
+    ].map(csvField).join(','));
+  });
+  const allDone = APP.items.every(it => APP.answers[it.item_id]);
+  const blob = new Blob([lines.join('\n') + '\n'], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = outputName(allDone);
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+renderUpload();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+torch==2.12.1
+transformers==5.12.1
+accelerate==1.14.0
+sentencepiece==0.2.1
+sentence-transformers==6.1.0
+huggingface_hub==1.21.0
+openai==3.10.0
+python-dotenv==1.2.2
+vaderSentiment==3.3.2
+numpy==2.4.4
+pandas==3.0.3
+pyarrow==24.0.0
+scipy==1.17.1
+statsmodels==0.14.6
+matplotlib==3.11.0
+tqdm==4.68.3

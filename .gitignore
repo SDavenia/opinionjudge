@@ -1,0 +1,20 @@
+# Data, scores and features: released separately (see README)
+artifacts/
+human_annotation/*/samples/
+human_annotation/*/assignments/
+human_annotation/*/ratings/
+
+# Outputs of the analyses
+results/
+figures/
+
+.env
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+
+# Dataset release candidates 
+release_candidates/
