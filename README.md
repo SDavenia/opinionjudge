@@ -37,7 +37,7 @@ cp .env.example .env             # OpenRouter key, only for score_openrouter.py
 
 ## Data
 
-All the data will be released on the Hugging Face Hub after publication, in three datasets:
+All the data will be released on the Hugging Face Hub after publication, in three separate datasets:
 
 | Dataset | Content |
 |---|---|
