@@ -162,7 +162,7 @@ This project has received funding from the European Union’s Horizon Europe res
 
 ## Licenses
 
-The Habermas Machine data and ValuePrism (AI2 ImpACT license) keep their original licenses; the opinions in `artifacts/` are derived from them.
+The Habermas Machine data and ValuePrism (AI2 ImpACT license) keep their original licenses; the opinions in `artifacts/` and human annotation studies in `human_annotation/` are derived from them.
 
 
 ## References
