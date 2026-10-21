@@ -1,4 +1,4 @@
-# Opinion Judge: How Do LLM-as-a-Judge Approaches Estimate the Alignment Between Subjective Opinions?
+# Opinion Judge: Measuring Stability and Biases of LLM-as-a-Judge for Opinion Alignment
 
 **Authors:** Samuele D'Avenia*, Marco Madeddu*, Silvia Casola, Valerio Basile, Viviana Patti.
 
